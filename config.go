@@ -16,12 +16,14 @@ type ConfigurationInterface interface {
 
 	// ConfigurationInterface needs to have a root AuthToken
 	AuthToken() string
+	setObj(interface{})
 }
 
 // Configuration is the base Configuration object
 type Configuration struct {
-	*sync.Mutex
-	Token string `json:"AuthToken"`
+	*sync.Mutex `json:"-"`
+	Token       string `json:"AuthToken"`
+	actualObj   interface{}
 }
 
 // NewConfig returns a pointer to a filled new instance of Configuration
@@ -35,6 +37,9 @@ func NewConfig() *Configuration {
 func (c *Configuration) AuthToken() string {
 
 	return c.Token
+}
+func (c *Configuration) setObj(obj interface{}) {
+	c.actualObj = obj
 }
 
 // ConfigFile is the file where the settings are stored
@@ -55,6 +60,7 @@ func LoadConfig(Config ConfigurationInterface) ConfigurationInterface {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	Config.setObj(Config)
 	return Config
 }
 
@@ -62,7 +68,7 @@ func LoadConfig(Config ConfigurationInterface) ConfigurationInterface {
 // Presumably after you've changed it but it does not do any checks
 func (c *Configuration) Sync() {
 	c.Lock()
-	b, err := json.MarshalIndent(c, "", "\t")
+	b, err := json.MarshalIndent(c.actualObj, "", "\t")
 	c.Unlock()
 	if err != nil {
 		log.Panicf("Json Marshal Error: %s", err)
