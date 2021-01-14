@@ -20,7 +20,7 @@ var TC *TestConfig
 func TestLoadConfig(t *testing.T) {
 
 	TC = &TestConfig{
-		Configuration: *NewConfig(),
+		Configuration: *NewConfig(""),
 	}
 
 	LoadConfig(TC)

@@ -6,7 +6,12 @@ import (
 	"log"
 	"os"
 	"sync"
+
+	"github.com/muhammadmuzzammil1998/jsonc"
 )
+
+// ConfigFile is the file where the settings are stored
+var ConfigFile = "./config.json"
 
 // ConfigurationInterface .
 type ConfigurationInterface interface {
@@ -24,12 +29,17 @@ type Configuration struct {
 	*sync.Mutex `json:"-"`
 	Token       string `json:"AuthToken"`
 	actualObj   interface{}
+	configFile  string
 }
 
 // NewConfig returns a pointer to a filled new instance of Configuration
-func NewConfig() *Configuration {
+func NewConfig(file string) *Configuration {
+	if len(file) == 0 {
+		file = ConfigFile
+	}
 	return &Configuration{
-		Mutex: &sync.Mutex{},
+		Mutex:      &sync.Mutex{},
+		configFile: file,
 	}
 }
 
@@ -42,13 +52,10 @@ func (c *Configuration) setObj(obj interface{}) {
 	c.actualObj = obj
 }
 
-// ConfigFile is the file where the settings are stored
-var ConfigFile = "./config.json"
-
 // LoadConfig loads the config and return the fiilled object
-func LoadConfig(Config ConfigurationInterface) ConfigurationInterface {
+func (c *Configuration) LoadConfig(Config ConfigurationInterface) ConfigurationInterface {
 
-	jsonFile, err := os.Open(ConfigFile)
+	jsonFile, err := os.Open(c.configFile)
 	// if we os.Open returns an error then handle it
 	if err != nil {
 		log.Fatalln(err)
@@ -56,6 +63,9 @@ func LoadConfig(Config ConfigurationInterface) ConfigurationInterface {
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 	jsonFile.Close()
+
+	byteValue = jsonc.ToJSON(byteValue)
+
 	err = json.Unmarshal(byteValue, &Config)
 	if err != nil {
 		log.Fatalln(err)
@@ -74,7 +84,7 @@ func (c *Configuration) Sync() {
 		log.Panicf("Json Marshal Error: %s", err)
 	}
 
-	err = ioutil.WriteFile(ConfigFile, b, 0644)
+	err = ioutil.WriteFile(c.configFile, b, 0644)
 
 	if err != nil {
 		log.Panicf("Failed to write config.json")
